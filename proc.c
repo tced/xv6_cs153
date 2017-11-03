@@ -389,7 +389,7 @@ scheduler(void)
   for(;;){
     // Enable interrupts on this processor.
     sti();
-    struct proc *highP; 
+    struct proc *high; 
 
     // Loop over process table looking for process to run.
     acquire(&ptable.lock);  
@@ -399,19 +399,19 @@ scheduler(void)
       }
       
 
-      highP = p; //ADDED
+      high = p; //ADDED
       for(p1 = ptable.proc; p1 < &ptable.proc[NPROC]; p1++) {
       	if (p1->state != RUNNABLE) { 
          	continue;  
        	}
-       	if (highP->p_val > p1->p_val) { 
-        	highP = p1; 
+       	if (high->p_val > p1->p_val) { 
+        	high = p1; 
        	}
       	//else {
    	//	continue;
       	//} 
      }
-     p = highP; 
+     p = high; 
       // Switch to chosen process.  It is the process's job
       // to release ptable.lock and then reacquire it
       // before jumping back to us.
