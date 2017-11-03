@@ -88,6 +88,7 @@ allocproc(void)
 found:
   p->state = EMBRYO;
   p->pid = nextpid++;
+  p->p_val = 20; //default to 60
 
   release(&ptable.lock);
 
@@ -199,6 +200,8 @@ fork(void)
   np->sz = curproc->sz;
   np->parent = curproc;
   *np->tf = *curproc->tf;
+  //np->p_val = 60; //added default here instead 
+
 
   // Clear %eax so that fork returns 0 in the child.
   np->tf->eax = 0;
@@ -362,8 +365,10 @@ waitpid(int curr_pid, int *status, int options)
 int setpriority(int new_pval) {
   struct proc* curproc = myproc(); 
   curproc->p_val = new_pval; 
-  cprintf("my curproc p_val is %d\n", curproc->p_val); 
-  return curproc->p_val; 
+  //cprintf("my curproc p_val is %d\n", curproc->p_val); 
+  return curproc->p_val;
+  //myproc()->p_val = new_pval; 
+  //return myproc()->p_val; 
 } 
 //PAGEBREAK: 42
 // Per-CPU process scheduler.
@@ -379,17 +384,34 @@ scheduler(void)
   struct proc *p;
   struct cpu *c = mycpu();
   c->proc = 0;
-  
+  struct proc *p1; 
+ 
   for(;;){
     // Enable interrupts on this processor.
     sti();
+    struct proc *high; 
 
     // Loop over process table looking for process to run.
-    acquire(&ptable.lock);
+    acquire(&ptable.lock);  
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-      if(p->state != RUNNABLE)
+      if(p->state != RUNNABLE) {
         continue;
+      }
+      
 
+      high = p; //ADDED
+      for(p1 = ptable.proc; p1 < &ptable.proc[NPROC]; p1++) {
+      	if (p1->state != RUNNABLE) { 
+         	continue;  
+       	}
+       	if (high->p_val > p1->p_val) { 
+        	high = p1; 
+       	}
+      	//else {
+   	//	continue;
+      	//} 
+     }
+     p = high; 
       // Switch to chosen process.  It is the process's job
       // to release ptable.lock and then reacquire it
       // before jumping back to us.
@@ -405,7 +427,7 @@ scheduler(void)
       c->proc = 0;
     }
     release(&ptable.lock);
-
+     
   }
 }
 
