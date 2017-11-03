@@ -223,13 +223,15 @@ fork(void)
 
 // Exit the current process.  Does not return.
 // An exited process remains in the zombie state
-// until its parent calls wait() to find out it exited.
+// until its parent calls wait(0) to find out it exited.
 void
-exit(void)
+exit(int status)
 {
   struct proc *curproc = myproc();
   struct proc *p;
   int fd;
+
+  curproc->status = status; 
 
   if(curproc == initproc)
     panic("init exiting");
@@ -249,7 +251,7 @@ exit(void)
 
   acquire(&ptable.lock);
 
-  // Parent might be sleeping in wait().
+  // Parent might be sleeping in wait(0).
   wakeup1(curproc->parent);
 
   // Pass abandoned children to init.
@@ -270,7 +272,7 @@ exit(void)
 // Wait for a child process to exit and return its pid.
 // Return -1 if this process has no children.
 int
-wait(void)
+wait(int *status)
 {
   struct proc *p;
   int havekids, pid;
@@ -295,6 +297,7 @@ wait(void)
         p->name[0] = 0;
         p->killed = 0;
         p->state = UNUSED;
+  	*status = p->status; 
         release(&ptable.lock);
         return pid;
       }
@@ -311,6 +314,57 @@ wait(void)
   }
 }
 
+int
+waitpid(int curr_pid, int *status, int options)  
+{
+  //int option = options; 
+  struct proc *p;
+  int havekids, pid2;
+  struct proc *curproc = myproc();
+
+  acquire(&ptable.lock);
+  for(;;){
+    // Scan through table looking for exited children.
+    havekids = 0;
+    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+      if(p->pid != curr_pid) 
+	continue; 
+      //if(p->parent != curproc)
+        //continue;
+        havekids = 1;
+      if(p->state == ZOMBIE){
+        // Found one.
+        pid2 = p->pid;
+        kfree(p->kstack);
+        p->kstack = 0;
+        freevm(p->pgdir);
+        p->pid = 0;
+        p->parent = 0;
+        p->name[0] = 0;
+        p->killed = 0;
+        p->state = UNUSED;
+        *status = p->status;
+        release(&ptable.lock);
+        return pid2;
+      }
+    }
+   } 
+    // No point waiting if we don't have any children.
+    if(!havekids || curproc->killed){
+      release(&ptable.lock);
+      return -1;
+    }
+
+    // Wait for children to exit.  (See wakeup1 call in proc_exit.)
+}
+
+//added setpriority function 
+int setpriority(int new_pval) {
+  struct proc* curproc = myproc(); 
+  curproc->p_val = new_pval; 
+  cprintf("my curproc p_val is %d\n", curproc->p_val); 
+  return curproc->p_val; 
+} 
 //PAGEBREAK: 42
 // Per-CPU process scheduler.
 // Each CPU calls scheduler() after setting itself up.
