@@ -13,6 +13,7 @@ sys_fork(void)
   return fork();
 }
 
+//added argint 
 int
 sys_exit(void)
 {
@@ -22,6 +23,7 @@ sys_exit(void)
   return 0;  // not reached
 }
 
+//added agrptr 
 int
 sys_wait(void)
 {
@@ -30,6 +32,7 @@ sys_wait(void)
   return wait(status);
 }
 
+//added agrptr and agrint to take in 3 parameters 
 int 
 sys_waitpid(void)
 {
@@ -41,6 +44,7 @@ sys_waitpid(void)
   return waitpid(id, status, op); 
 }
 
+//added setpriority system call and used argint 
 int 
 sys_setpriority(void)
 {

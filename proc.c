@@ -224,6 +224,7 @@ fork(void)
   return pid;
 }
 
+//MODIFIED: parameter and updated status 
 // Exit the current process.  Does not return.
 // An exited process remains in the zombie state
 // until its parent calls wait(0) to find out it exited.
@@ -272,6 +273,7 @@ exit(int status)
   panic("zombie exit");
 }
 
+//MODIFIED: changed paramter to int* and updated status inside for loop 
 // Wait for a child process to exit and return its pid.
 // Return -1 if this process has no children.
 int
@@ -317,6 +319,8 @@ wait(int *status)
   }
 }
 
+//ADDED: similar to wait function but takes in status, options, pid. 
+//compares pid that takes in parameter and pid of process in page table 
 int
 waitpid(int curr_pid, int *status, int options)  
 {
@@ -361,7 +365,9 @@ waitpid(int curr_pid, int *status, int options)
     // Wait for children to exit.  (See wakeup1 call in proc_exit.)
 }
 
-//added setpriority function 
+//added setpriority function
+//takes in designed priority value to and changes priority value of 
+//process  
 int setpriority(int new_pval) {
   struct proc* curproc = myproc(); 
   curproc->p_val = new_pval; 
@@ -378,6 +384,10 @@ int setpriority(int new_pval) {
 //  - swtch to start running that process
 //  - eventually that process transfers control
 //      via swtch back to the scheduler.
+
+//changes scheduler from round-robin to priority scheduling
+	//compares priority value of each process and lets the process
+	//with the highest priority value  
 void
 scheduler(void)
 {
@@ -389,8 +399,10 @@ scheduler(void)
   for(;;){
     // Enable interrupts on this processor.
     sti();
-    struct proc *high; 
+    struct proc *high;
 
+ 
+    //allocates a new process to compare with other for loop
     // Loop over process table looking for process to run.
     acquire(&ptable.lock);  
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
